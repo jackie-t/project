@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+    <title>PIXI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/3.0.9/pixi.min.js"></script>
+</head>
+<body>
+<div id="main" />
+<script>
+    var pixi_renderer = new PIXI.WebGLRenderer(400, 400);
+    document.getElementById('main').appendChild(pixi_renderer.view);
+
+    var my_stage = new PIXI.Container();
+
+    var buffer = new PIXI.CanvasBuffer(400, 400);
+    var canvas = buffer.canvas;
+    var context = buffer.context;
+
+    var file_loader = new PIXI.loaders.Loader();
+    file_loader
+        .on('complete', on_done)
+        .add('key1', 'test.png')
+        .add('key2', 'test2.png')
+        .load();
+
+    function on_done(loader, resource) {
+        var test_image_a = resource['key1'].texture;
+        var test_image_b = resource['key2'].texture;
+
+        var color_matrix_filter = new PIXI.filters.ColorMatrixFilter();
+        color_matrix_filter.hue(1);
+
+        var test_image_a_filtered = new PIXI.Sprite(test_image_a);
+        test_image_a_filtered.filters = [color_matrix_filter];
+        var test_image_b_filtered = new PIXI.Sprite(test_image_b);
+        test_image_b_filtered.filters = [color_matrix_filter];
+
+        var filtered_texture_a = test_image_a_filtered.generateTexture(pixi_renderer);
+        var filtered_texture_b = test_image_b_filtered.generateTexture(pixi_renderer);
+
+
+        var background = new PIXI.Graphics();
+
+        background.beginFill(0xFFFFFF);
+        background.drawRect(0,0,400,400);
+        background.endFill();
+
+        // No ColorMatrixFilter
+        context.drawImage(test_image_a.baseTexture.source, 0, 0, test_image_a.width, test_image_a.height, 0, 0, test_image_a.width, test_image_a.height);
+        context.drawImage(test_image_a.baseTexture.source, 0, 0, test_image_a.width, test_image_a.height, 75, 0, test_image_a.width, test_image_a.height);
+
+        // With ColorMatrixFilter
+        context.drawImage(filtered_texture_a.getCanvas(), 0, 0, test_image_a.width, test_image_a.height, 75, 100, test_image_a.width, test_image_a.height);
+        context.drawImage(test_image_a.baseTexture.source, 0, 0, test_image_a.width, test_image_a.height, 0, 100, test_image_a.width, test_image_a.height);
+
+
+        var i;
+        for (i=0; i<=100; i+=10) {
+            // Overlapping several images with 10% transparency - works fine normally ...
+            context.drawImage(test_image_b.baseTexture.source, 0, 0, test_image_b.width, test_image_b.height, i, 200, test_image_b.width, test_image_b.height);
+
+            // ... but the moment the ColorMatrixFilter is applied, the green gets a strong black hue
+            context.drawImage(filtered_texture_b.getCanvas(), 0, 0, test_image_b.width, test_image_b.height, i, 300, test_image_b.width, test_image_b.height);
+        }
+
+
+        var sprite = new PIXI.Sprite();
+        sprite.texture = PIXI.Texture.fromCanvas(canvas);
+
+        my_stage.addChild(background);
+        my_stage.addChild(sprite);
+
+
+        var text;
+
+        text = new PIXI.Text('No CMF',{font : '10pt Arial', fill : 0xff0000, align : 'left'});
+        text.y = 33;
+        text.x = 250;
+        my_stage.addChild(text);
+
+        text = new PIXI.Text('CMF',{font : '10pt Arial', fill : 0xff0000, align : 'left'});
+        text.y = 133;
+        text.x = 250;
+        my_stage.addChild(text);
+
+        text = new PIXI.Text('No CMF',{font : '10pt Arial', fill : 0xff0000, align : 'left'});
+        text.y = 233;
+        text.x = 250;
+        my_stage.addChild(text);
+
+        text = new PIXI.Text('CMF',{font : '10pt Arial', fill : 0xff0000, align : 'left'});
+        text.y = 333;
+        text.x = 250;
+        my_stage.addChild(text);
+
+        pixi_renderer.render(my_stage);
+    }
+</script>
+</body>
+</html>
